@@ -1,6 +1,6 @@
 // https://leetcode.com/problems/binary-trees-with-factors/
 
-const val modulus = 1000000007
+private const val modulus = 1000000007
 
 class Solution {
     
