@@ -1,10 +1,5 @@
 // https://leetcode.com/problems/candy/
 
-enum class Status {
-    UNASSIGNED,
-    ASSIGNED
-}
-
 class Solution {
     fun candy(ratings: IntArray): Int {
         var indices = IntArray(ratings.size) { it }
