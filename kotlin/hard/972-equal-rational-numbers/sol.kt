@@ -12,8 +12,6 @@ class Solution {
       val td = t.toDouble()
       return if (sd < eps) {
           td < eps
-      } else if (sd < eps) {
-          sd < eps
       } else {
           kotlin.math.abs((sd-td)/sd) < eps
       }
