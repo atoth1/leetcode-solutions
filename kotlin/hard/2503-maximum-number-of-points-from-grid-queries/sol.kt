@@ -16,30 +16,38 @@ private operator fun Position.plus(dir: Direction): Position {
     return Position(row + dir.rowDelta, col + dir.colDelta)
 }
 
-/*
-  Would prefer to do something like:
-  
-  private operator fun <T> Array<List<T>>.get(pos: Position): T {
-      return get(pos.row)[pos.col]
-  }
+private interface TypedArrayWrapper<T> {
+    operator fun get(id: Int): T
 
-  private operator fun <T> Array<MutableList<T>>.set(pos: Position, value: T) {
-      get(pos.row).set(pos.col, value)
-  }
-
-  but unsure how to accomplish this generically with the typed arrays
- */
-
-private operator fun Array<IntArray>.get(pos: Position): Int {
-    return get(pos.row)[pos.col]
+    operator fun set(id: Int, value: T)
 }
 
-private operator fun Array<BooleanArray>.get(pos: Position): Boolean {
-    return get(pos.row)[pos.col]
+private class IntArrayWrapper(private val underlying: IntArray) : TypedArrayWrapper<Int> {
+    override operator fun get(id: Int): Int {
+        return underlying[id]
+    }
+
+    override operator fun set(id: Int, value: Int) {
+        underlying[id] = value
+    }
 }
 
-private operator fun Array<BooleanArray>.set(pos: Position, value: Boolean) {
-    get(pos.row).set(pos.col, value)
+private class BooleanArrayWrapper(private val underlying: BooleanArray) : TypedArrayWrapper<Boolean> {
+    override operator fun get(id: Int): Boolean {
+        return underlying[id]
+    }
+
+    override operator fun set(id: Int, value: Boolean) {
+        underlying[id] = value
+    }
+}
+
+private operator fun <T, Wrapper: TypedArrayWrapper<T>> Array<Wrapper>.get(pos: Position): T {
+    return this[pos.row][pos.col]
+}
+
+private operator fun <T, Wrapper: TypedArrayWrapper<T>> Array<Wrapper>.set(pos: Position, value: T) {
+    this[pos.row][pos.col] = value
 }
 
 class Solution {
@@ -50,9 +58,10 @@ class Solution {
         val rows = grid.size
         val cols = grid[0].size
         
+        val gridWrapper = Array(rows) { IntArrayWrapper(grid[it]) }
         val reachable = mutableListOf<Position>()
-        val unreachable = PriorityQueue<Position> { x, y -> grid[x] - grid[y] }
-        val visited = Array(rows) { BooleanArray(cols) }
+        val unreachable = PriorityQueue<Position> { x, y -> gridWrapper[x] - gridWrapper[y] }
+        val visited = Array(rows) { BooleanArrayWrapper(BooleanArray(cols)) }
         
         unreachable.add(Position(0, 0))
         visited[unreachable.peek()] = true
@@ -60,9 +69,8 @@ class Solution {
         var score = 0
         val ret = IntArray(queries.size)
         for (id in sortedIds) {
-            while (!unreachable.isEmpty() && queries[id] > grid[unreachable.peek()]) {
-                val newlyReachable = unreachable.poll()
-                reachable.add(newlyReachable)
+            while (!unreachable.isEmpty() && queries[id] > gridWrapper[unreachable.peek()]) {
+                reachable.add(unreachable.poll())
                 ++score
             }
             
@@ -73,7 +81,7 @@ class Solution {
                     val newPos = pos + dir
                     if (newPos.inBounds(rows, cols) && !visited[newPos]) {
                         visited[newPos] = true
-                        if (queries[id] > grid[newPos]) {
+                        if (queries[id] > gridWrapper[newPos]) {
                             reachable.add(newPos)
                             ++score
                         } else {
@@ -87,3 +95,4 @@ class Solution {
         return ret
     }
 }
+
